@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>depemokimab 26週スケジュール</title>
+
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    text-align: center;
+    padding: 20px;
+}
+
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    max-width: 400px;
+    margin: 20px auto;
+}
+
+.day {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.dose {
+    background-color: #ff4d4d;
+    color: white;
+    font-weight: bold;
+}
+
+.header {
+    font-weight: bold;
+}
+</style>
+</head>
+
+<body>
+
+<h2>depemokimab 26週スケジュール</h2>
+
+<input type="date" id="startDate">
+<br><br>
+<button id="generateBtn">スケジュール生成</button>
+
+<h3 id="monthTitle"></h3>
+<div class="calendar" id="calendar"></div>
+
+<script>
+
+function generateCalendar(baseDate, secondDoseDate) {
+
+    const calendar = document.getElementById("calendar");
+    const monthTitle = document.getElementById("monthTitle");
+    calendar.innerHTML = "";
+
+    const year = baseDate.getFullYear();
+    const month = baseDate.getMonth();
+
+    monthTitle.innerText = year + "年 " + (month + 1) + "月";
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+
+    const days = ["日","月","火","水","木","金","土"];
+    days.forEach(d => {
+        const div = document.createElement("div");
+        div.innerText = d;
+        div.classList.add("header");
+        calendar.appendChild(div);
+    });
+
+    for (let i = 0; i < firstDay; i++) {
+        calendar.appendChild(document.createElement("div"));
+    }
+
+    for (let day = 1; day <= lastDate; day++) {
+
+        const current = new Date(year, month, day);
+        const div = document.createElement("div");
+        div.classList.add("day");
+        div.innerText = day;
+
+        if (
+            current.toDateString() === baseDate.toDateString() ||
+            current.toDateString() === secondDoseDate.toDateString()
+        ) {
+            div.classList.add("dose");
+        }
+
+        calendar.appendChild(div);
+    }
+}
+
+document.getElementById("generateBtn").addEventListener("click", function(){
+
+    const input = document.getElementById("startDate").value;
+    if (!input) {
+        alert("初回投与日を入力してください");
+        return;
+    }
+
+    const baseDate = new Date(input);
+
+    const secondDoseDate = new Date(baseDate);
+    secondDoseDate.setDate(baseDate.getDate() + (26 * 7));
+
+    generateCalendar(baseDate, secondDoseDate);
+
+});
+
+// 今日を自動セット
+window.addEventListener("load", function(){
+    const today = new Date().toISOString().split("T")[0];
+    document.getElementById("startDate").value = today;
+});
+
+</script>
+
+</body>
+</html>
