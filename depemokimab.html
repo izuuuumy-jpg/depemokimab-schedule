@@ -1,124 +1,523 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>depemokimab 26週スケジュール</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>26weeker</title>
+  <meta name="description" content="開始日から26週後・52週後をカレンダーで確認してPDF出力できるツール" />
 
-<style>
-body {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    text-align: center;
-    padding: 20px;
-}
+  <style>
+    :root{
+      --bg0:#050b1a;
+      --bg1:#071a3a;
+      --card:rgba(255,255,255,.07);
+      --card2:rgba(255,255,255,.11);
+      --border:rgba(255,255,255,.12);
 
-.calendar {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 5px;
-    max-width: 400px;
-    margin: 20px auto;
-}
+      --text:#eaf2ff;
+      --muted:rgba(234,242,255,.72);
 
-.day {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-}
+      --sky:#38bdf8;
+      --indigo:#2563eb;
+      --cyan:#22d3ee;
+      --mint:#34d399;
+      --amber:#facc15;
 
-.dose {
-    background-color: #ff4d4d;
-    color: white;
-    font-weight: bold;
-}
+      --range:rgba(56,189,248,.18);
+      --today:rgba(250,204,21,.18);
 
-.header {
-    font-weight: bold;
-}
-</style>
+      --shadow: 0 14px 40px rgba(0,0,0,.38);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 18% -10%, rgba(56,189,248,.25), transparent 60%),
+        radial-gradient(900px 700px at 110% 5%, rgba(37,99,235,.25), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      font-family: system-ui,-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;
+    }
+    .bg{
+      position:fixed; inset:0; pointer-events:none;
+      background:
+        radial-gradient(900px 500px at 30% 30%, rgba(34,211,238,.14), transparent 60%),
+        radial-gradient(700px 500px at 70% 70%, rgba(37,99,235,.16), transparent 60%);
+      opacity:.95;
+    }
+
+    .wrap{max-width:1060px;margin:0 auto;padding:18px}
+    header{padding-top:22px}
+    footer{padding-bottom:28px;color:var(--muted)}
+    h1{margin:0;font-size:28px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);line-height:1.6}
+
+    .brand{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+    .logo{
+      width:46px;height:46px;border-radius:14px;
+      display:grid;place-items:center;
+      background: linear-gradient(135deg, rgba(56,189,248,.95), rgba(37,99,235,.95));
+      box-shadow: var(--shadow);
+      font-weight:900;
+      user-select:none;
+    }
+
+    .panel{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+      border-radius:16px;
+      padding:14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .controls{
+      display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end;
+      justify-content:space-between;
+    }
+    .field{display:flex;flex-direction:column;gap:6px;min-width:240px}
+    .label{font-size:12px;color:var(--muted)}
+    input[type="date"]{
+      appearance:none;
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.25);
+      color: var(--text);
+      font-size:15px;
+      outline:none;
+    }
+    input[type="date"]:focus{
+      border-color: rgba(56,189,248,.65);
+      box-shadow: 0 0 0 4px rgba(56,189,248,.15);
+    }
+
+    .btnRow{display:flex;gap:10px;flex-wrap:wrap}
+    .btn{
+      padding:10px 12px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor:pointer;
+      font-weight:650;
+      letter-spacing:.2px;
+    }
+    .btn:hover{background: rgba(255,255,255,.10)}
+    .btn.primary{
+      border-color: rgba(56,189,248,.55);
+      background: linear-gradient(135deg, rgba(56,189,248,.30), rgba(37,99,235,.22));
+    }
+    .btn.ghost{background: rgba(255,255,255,.04)}
+    .btn:disabled{opacity:.45;cursor:not-allowed}
+
+    .rangeInfo{margin-top:10px;color:var(--muted);min-height:1.2em}
+    .legend{
+      margin-top:10px;
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      color:var(--muted); font-size:12px;
+    }
+    .dot{width:10px;height:10px;border-radius:99px;display:inline-block;margin-right:6px}
+    .dot.start{background: linear-gradient(135deg, var(--cyan), var(--indigo))}
+    .dot.w26{background: linear-gradient(135deg, var(--sky), var(--cyan))}
+    .dot.w52{background: linear-gradient(135deg, var(--mint), var(--sky))}
+    .dot.inrange{background: rgba(56,189,248,.35)}
+    .dot.today{background: rgba(250,204,21,.55)}
+
+    .hint{color:var(--muted);font-size:12px;margin:10px 2px 8px}
+
+    /* 横スクロール（画面表示用） */
+    .calScroll{
+      overflow-x:auto;
+      overflow-y:hidden;
+      -webkit-overflow-scrolling: touch;
+      scroll-snap-type: x mandatory;
+      padding-bottom: 10px;
+    }
+    .calRow{
+      display:flex;
+      gap:14px;
+      padding: 2px 2px 10px;
+      min-height: 360px;
+    }
+
+    .month{
+      flex: 0 0 340px;
+      scroll-snap-align: start;
+      border:1px solid var(--border);
+      border-radius:16px;
+      overflow:hidden;
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.035));
+      box-shadow: var(--shadow);
+    }
+    .monthHeader{
+      padding:12px 12px;
+      border-bottom:1px solid var(--border);
+      display:flex;align-items:center;justify-content:space-between;
+    }
+    .monthHeader .title{font-weight:850}
+    .monthHeader .pill{
+      font-size:11px; color: var(--muted);
+      padding:4px 8px; border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.22);
+    }
+
+    .weekdays,.days{display:grid;grid-template-columns:repeat(7,1fr)}
+    .weekdays div{
+      padding:8px 0;
+      text-align:center;
+      font-size:11px;
+      color: var(--muted);
+      border-bottom:1px solid var(--border);
+      background: rgba(0,0,0,.12);
+    }
+
+    .day{
+      min-height:44px;
+      padding:6px;
+      border-right:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid rgba(255,255,255,.08);
+      position:relative;
+    }
+    .day:nth-child(7n){border-right:none}
+    .num{font-size:12px;color:var(--text)}
+    .day.muted .num{color: rgba(234,242,255,.28)}
+
+    .day.inRange{background: var(--range)}
+    .day.today{background: var(--today)}
+
+    .day.start{
+      background: linear-gradient(135deg, rgba(34,211,238,.36), rgba(37,99,235,.32));
+    }
+    .day.w26{
+      background: linear-gradient(135deg, rgba(56,189,248,.34), rgba(34,211,238,.26));
+    }
+    .day.w52{
+      background: linear-gradient(135deg, rgba(52,211,153,.30), rgba(56,189,248,.20));
+    }
+
+    .badge{
+      position:absolute;
+      right:6px; top:6px;
+      font-size:10px;
+      padding:2px 7px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(0,0,0,.28);
+      color: var(--text);
+      backdrop-filter: blur(8px);
+      white-space:nowrap;
+    }
+    .badge.start{border-color: rgba(34,211,238,.50)}
+    .badge.w26{border-color: rgba(56,189,248,.55)}
+    .badge.w52{border-color: rgba(52,211,153,.55)}
+
+    /* --- 印刷/PDF（A4） --- */
+    @page { size: A4; margin: 10mm; }
+    @media print{
+      body{ background:#fff !important; color:#111 !important; }
+      .bg, footer, .hint{ display:none !important; }
+      header .sub{ color:#333 !important; }
+      .panel{
+        box-shadow:none !important;
+        background:#fff !important;
+        border:1px solid #ddd !important;
+      }
+      input, button{ display:none !important; }   /* 入力/ボタンは非表示 */
+      .legend{ color:#333 !important; }
+      .dot{ outline:1px solid #999; }
+
+      /* 横スクロールを解除して、月カードをA4で折り返し表示 */
+      .calScroll{ overflow:visible !important; }
+      .calRow{
+        display:grid !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 10mm !important;
+        min-height: auto !important;
+      }
+      .month{
+        width:100% !important;
+        box-shadow:none !important;
+        border:1px solid #ddd !important;
+        background:#fff !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      .monthHeader, .weekdays div{
+        background:#f6f8ff !important;
+        color:#111 !important;
+        border-color:#ddd !important;
+      }
+      .day{
+        border-color:#eee !important;
+      }
+      .day.muted .num{ color:#bbb !important; }
+      .day.inRange{ background:#eef6ff !important; }
+      .day.today{ background:#fff6cc !important; }
+      .day.start{ background:#e7f7ff !important; }
+      .day.w26{ background:#eaf2ff !important; }
+      .day.w52{ background:#eafff5 !important; }
+
+      .badge{
+        background:#fff !important;
+        color:#111 !important;
+        border-color:#999 !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="bg" aria-hidden="true"></div>
 
-<h2>depemokimab 26週スケジュール</h2>
+  <header class="wrap">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">26</div>
+      <div>
+        <h1>26weeker</h1>
+        <p class="sub">開始日から <b>26週後</b>・<b>52週後</b> をカレンダーで表示し、A4 PDFとして保存できます。</p>
+      </div>
+    </div>
 
-<input type="date" id="startDate">
-<br><br>
-<button id="generateBtn">スケジュール生成</button>
+    <div class="panel">
+      <div class="controls">
+        <label class="field">
+          <span class="label">開始日</span>
+          <input id="startDate" type="date" />
+        </label>
 
-<h3 id="monthTitle"></h3>
-<div class="calendar" id="calendar"></div>
+        <div class="btnRow">
+          <button id="calcBtn" class="btn primary" type="button">計算する（PDF出力）</button>
+          <button id="previewBtn" class="btn ghost" type="button">プレビューのみ</button>
+          <button id="todayBtn" class="btn ghost" type="button">今日</button>
+          <button id="clearBtn" class="btn ghost" type="button">クリア</button>
+        </div>
+      </div>
 
-<script>
+      <div id="rangeInfo" class="rangeInfo" aria-live="polite"></div>
 
-function generateCalendar(baseDate, secondDoseDate) {
+      <div class="legend">
+        <span class="dot start"></span><span>開始</span>
+        <span class="dot w26"></span><span>26週後</span>
+        <span class="dot w52"></span><span>52週後</span>
+        <span class="dot inrange"></span><span>範囲内</span>
+        <span class="dot today"></span><span>今日</span>
+      </div>
+    </div>
+  </header>
 
-    const calendar = document.getElementById("calendar");
-    const monthTitle = document.getElementById("monthTitle");
-    calendar.innerHTML = "";
+  <main class="wrap">
+    <div class="hint">画面では横にスワイプして月を移動できます（PDFではA4に整形して出力されます）。</div>
+    <div id="calScroll" class="calScroll" aria-label="カレンダー（横スクロール）">
+      <div id="calendars" class="calRow"></div>
+    </div>
+  </main>
 
-    const year = baseDate.getFullYear();
-    const month = baseDate.getMonth();
+  <footer class="wrap">
+    <small>© 26weeker</small>
+  </footer>
 
-    monthTitle.innerText = year + "年 " + (month + 1) + "月";
+  <script>
+    const startInput  = document.getElementById("startDate");
+    const calendarsEl = document.getElementById("calendars");
+    const rangeInfoEl = document.getElementById("rangeInfo");
+    const calScroll   = document.getElementById("calScroll");
 
-    const firstDay = new Date(year, month, 1).getDay();
-    const lastDate = new Date(year, month + 1, 0).getDate();
+    const calcBtn    = document.getElementById("calcBtn");
+    const previewBtn = document.getElementById("previewBtn");
+    const todayBtn   = document.getElementById("todayBtn");
+    const clearBtn   = document.getElementById("clearBtn");
 
-    const days = ["日","月","火","水","木","金","土"];
-    days.forEach(d => {
-        const div = document.createElement("div");
-        div.innerText = d;
-        div.classList.add("header");
-        calendar.appendChild(div);
-    });
+    const DAYS_26W = 7 * 26; // 182
+    const DAYS_52W = 7 * 52; // 364
+    const jpWeekdays = ["日","月","火","水","木","金","土"];
 
-    for (let i = 0; i < firstDay; i++) {
-        calendar.appendChild(document.createElement("div"));
+    function pad(n){ return String(n).padStart(2,"0"); }
+    function toISODate(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+    function parseISODate(iso){
+      const [y,m,dd] = iso.split("-").map(Number);
+      return new Date(y, m-1, dd);
     }
+    function addDays(date, days){
+      const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+    function startOfMonth(date){ return new Date(date.getFullYear(), date.getMonth(), 1); }
+    function endOfMonth(date){ return new Date(date.getFullYear(), date.getMonth()+1, 0); }
+    function formatJP(date){ return `${date.getFullYear()}年${date.getMonth()+1}月${date.getDate()}日`; }
+    function sameDay(a,b){
+      return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+    }
+    function monthTitle(date){ return `${date.getFullYear()}年 ${date.getMonth()+1}月`; }
 
-    for (let day = 1; day <= lastDate; day++) {
+    function buildMonthCalendar(monthDate, startDate, d26, d52, rangeEnd){
+      const monthStart = startOfMonth(monthDate);
+      const monthEnd = endOfMonth(monthDate);
+      const firstDayDow = monthStart.getDay();
+      const daysInMonth = monthEnd.getDate();
+      const totalCells = 42; // 6週固定
 
-        const current = new Date(year, month, day);
-        const div = document.createElement("div");
-        div.classList.add("day");
-        div.innerText = day;
+      const wrapper = document.createElement("section");
+      wrapper.className = "month";
 
-        if (
-            current.toDateString() === baseDate.toDateString() ||
-            current.toDateString() === secondDoseDate.toDateString()
-        ) {
-            div.classList.add("dose");
+      const header = document.createElement("div");
+      header.className = "monthHeader";
+
+      const title = document.createElement("div");
+      title.className = "title";
+      title.textContent = monthTitle(monthDate);
+
+      const pill = document.createElement("div");
+      pill.className = "pill";
+      pill.textContent = "Month";
+
+      header.appendChild(title);
+      header.appendChild(pill);
+      wrapper.appendChild(header);
+
+      const weekdaysRow = document.createElement("div");
+      weekdaysRow.className = "weekdays";
+      jpWeekdays.forEach(w=>{
+        const el=document.createElement("div");
+        el.textContent=w;
+        weekdaysRow.appendChild(el);
+      });
+      wrapper.appendChild(weekdaysRow);
+
+      const daysGrid = document.createElement("div");
+      daysGrid.className = "days";
+
+      const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      for(let cell=0; cell<totalCells; cell++){
+        const dayEl=document.createElement("div");
+        dayEl.className="day";
+
+        const dayNum = cell - firstDayDow + 1;
+        const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), dayNum);
+
+        const numEl=document.createElement("div");
+        numEl.className="num";
+
+        if(dayNum<1 || dayNum>daysInMonth){
+          dayEl.classList.add("muted");
+          numEl.textContent = String(date.getDate());
+        }else{
+          numEl.textContent = String(dayNum);
         }
 
-        calendar.appendChild(div);
+        // 範囲（開始〜52週後まで）
+        const inRange = (date >= startDate && date <= rangeEnd);
+        if(inRange) dayEl.classList.add("inRange");
+
+        // 今日
+        if(sameDay(date, todayLocal)) dayEl.classList.add("today");
+
+        // 特殊日：開始 / 26週 / 52週
+        if(sameDay(date, startDate)){
+          dayEl.classList.add("start");
+          const b=document.createElement("div");
+          b.className="badge start";
+          b.textContent="開始";
+          dayEl.appendChild(b);
+        }else if(sameDay(date, d26)){
+          dayEl.classList.add("w26");
+          const b=document.createElement("div");
+          b.className="badge w26";
+          b.textContent="26週後";
+          dayEl.appendChild(b);
+        }else if(sameDay(date, d52)){
+          dayEl.classList.add("w52");
+          const b=document.createElement("div");
+          b.className="badge w52";
+          b.textContent="52週後";
+          dayEl.appendChild(b);
+        }
+
+        dayEl.appendChild(numEl);
+        daysGrid.appendChild(dayEl);
+      }
+
+      wrapper.appendChild(daysGrid);
+      return wrapper;
     }
-}
 
-document.getElementById("generateBtn").addEventListener("click", function(){
+    function render(startDate){
+      calendarsEl.innerHTML = "";
+      rangeInfoEl.textContent = "";
+      if(!startDate) return null;
 
-    const input = document.getElementById("startDate").value;
-    if (!input) {
-        alert("初回投与日を入力してください");
-        return;
+      const d26 = addDays(startDate, DAYS_26W);
+      const d52 = addDays(startDate, DAYS_52W);
+      const rangeEnd = d52;
+
+      rangeInfoEl.textContent =
+        `開始：${formatJP(startDate)} ／ 26週後：${formatJP(d26)} ／ 52週後：${formatJP(d52)}`;
+
+      // 開始月〜52週後の月まで生成
+      const months = [];
+      let cursor = startOfMonth(startDate);
+      const lastMonth = startOfMonth(rangeEnd);
+
+      while(cursor <= lastMonth){
+        months.push(new Date(cursor.getFullYear(), cursor.getMonth(), 1));
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth()+1, 1);
+      }
+
+      months.forEach(m=>{
+        calendarsEl.appendChild(buildMonthCalendar(m, startDate, d26, d52, rangeEnd));
+      });
+
+      // 先頭へ
+      calScroll.scrollLeft = 0;
+
+      return { d26, d52 };
     }
 
-    const baseDate = new Date(input);
+    function ensureDateOrAlert(){
+      if(!startInput.value){
+        alert("開始日を入力してください。");
+        return null;
+      }
+      return parseISODate(startInput.value);
+    }
 
-    const secondDoseDate = new Date(baseDate);
-    secondDoseDate.setDate(baseDate.getDate() + (26 * 7));
+    // プレビューのみ
+    previewBtn.addEventListener("click", ()=>{
+      const start = ensureDateOrAlert();
+      if(!start) return;
+      render(start);
+    });
 
-    generateCalendar(baseDate, secondDoseDate);
+    // 計算する（= PDF出力）
+    calcBtn.addEventListener("click", ()=>{
+      const start = ensureDateOrAlert();
+      if(!start) return;
+      render(start);
 
-});
+      // 描画反映後に印刷（PDF保存）を開く
+      setTimeout(()=> window.print(), 150);
+    });
 
-// 今日を自動セット
-window.addEventListener("load", function(){
-    const today = new Date().toISOString().split("T")[0];
-    document.getElementById("startDate").value = today;
-});
+    // 今日
+    todayBtn.addEventListener("click", ()=>{
+      const now = new Date();
+      const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      startInput.value = toISODate(todayLocal);
+      render(todayLocal);
+    });
 
-</script>
-
+    // クリア
+    clearBtn.addEventListener("click", ()=>{
+      startInput.value = "";
+      calendarsEl.innerHTML = "";
+      rangeInfoEl.textContent = "";
+    });
+  </script>
 </body>
 </html>
